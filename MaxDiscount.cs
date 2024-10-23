@@ -1,14 +1,16 @@
-﻿
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 class Discount
 {
-    public string Index;
+    public string Code;
     public int Type;
     public int Value;
-    public Discount(string index, int type, int value)
+
+    public Discount(string code, int type, int value)
     {
-        this.Index = index;
+        this.Code = code;
         this.Type = type;
         this.Value = value;
     }
@@ -16,84 +18,67 @@ class Discount
 
 class Result
 {
-
-    /*
-     * Complete the 'findLowestPrice' function below.
-     *
-     * The function is expected to return an INTEGER.
-     * The function accepts following parameters:
-     *  1. 2D_STRING_ARRAY products
-     *  2. 2D_STRING_ARRAY discounts
-     */
-    static int CalcDiscountAmount(int taggedPrice, Discount discount)
+    // Method to calculate the discounted price based on the type of discount
+    static int ApplyDiscount(int price, Discount discount)
     {
-
-        if (discount.Type == 0)
-        {
-            taggedPrice = discount.Value;
-        }
-        else if (discount.Type == 1)
-        {
-            taggedPrice = (int)Math.Round(taggedPrice * (100.0 - discount.Value) / 100);
-        }
-        else if (discount.Type == 2)
-        {
-            taggedPrice -= discount.Value;
-        }
-
-        return taggedPrice;
-
+        if (discount.Type == 0) // Set fixed price
+            return discount.Value;
+        else if (discount.Type == 1) // Percentage discount
+            return (int)Math.Round(price * (100.0 - discount.Value) / 100);
+        else if (discount.Type == 2) // Flat amount discount
+            return price - discount.Value;
+        
+        return price; // If no discount is applied
     }
 
     public static int findLowestPrice(List<List<string>> products, List<List<string>> discounts)
     {
-        int result = 0;
-        Dictionary<string, Discount> productDiscount = new Dictionary<string, Discount>();
+        // Store discount information in a dictionary for quick access
+        Dictionary<string, Discount> discountMap = new Dictionary<string, Discount>();
         foreach (var discount in discounts)
         {
-            string[] d = discount.ToArray();
-            int type = int.Parse(d[1]);
-            int value = int.Parse(d[2]);
-            if (!productDiscount.ContainsKey(d[0]))
-                productDiscount.Add(d[0], new Discount(d[0], type, value));
+            string code = discount[0];
+            int type = int.Parse(discount[1]);
+            int value = int.Parse(discount[2]);
+            discountMap[code] = new Discount(code, type, value);
         }
 
+        int totalMinPrice = 0;
+
+        // Iterate over each product
         foreach (var product in products)
         {
-            int price = int.Parse(product[0]);
-            int min = price;
-            for (int i = 0; i < product.Count; i++)
+            // First element is the original price of the product
+            int originalPrice = int.Parse(product[0]);
+            int minPrice = originalPrice; // Start with the original price as the minimum
+
+            // Check all associated discount codes for the product
+            for (int i = 1; i < product.Count; i++)
             {
-                int currentPrice = price;
-                string index = product[i];
-                if (!string.Equals(index, "EMPTY", StringComparison.OrdinalIgnoreCase))
+                string discountCode = product[i];
+
+                // If discount code exists and is valid
+                if (!string.Equals(discountCode, "EMPTY", StringComparison.OrdinalIgnoreCase) && discountMap.ContainsKey(discountCode))
                 {
-                    if (productDiscount.ContainsKey(index))
-                    {
-                        Discount discount = productDiscount[index];
-
-                        min = Math.Min(min, CalcDiscountAmount(currentPrice, discount));
-                    }
+                    Discount discount = discountMap[discountCode];
+                    // Apply discount and update the minimum price
+                    minPrice = Math.Min(minPrice, ApplyDiscount(originalPrice, discount));
                 }
-
             }
-            result += min;
+
+            // Add the minimum price of this product to the total
+            totalMinPrice += minPrice;
         }
-        return result;
+
+        return totalMinPrice; // Return the total minimum price across all products
     }
-
-
 }
 
 class Solution
 {
     public static void Main(string[] args)
     {
-        TextWriter textWriter = new StreamWriter(@System.Environment.GetEnvironmentVariable("OUTPUT_PATH"), true);
-
         int productsRows = Convert.ToInt32(Console.ReadLine().Trim());
-        int productsColumns = Convert.ToInt32(Console.ReadLine().Trim());
-
         List<List<string>> products = new List<List<string>>();
 
         for (int i = 0; i < productsRows; i++)
@@ -102,8 +87,6 @@ class Solution
         }
 
         int discountsRows = Convert.ToInt32(Console.ReadLine().Trim());
-        int discountsColumns = Convert.ToInt32(Console.ReadLine().Trim());
-
         List<List<string>> discounts = new List<List<string>>();
 
         for (int i = 0; i < discountsRows; i++)
@@ -112,11 +95,6 @@ class Solution
         }
 
         int result = Result.findLowestPrice(products, discounts);
-
-        textWriter.WriteLine(result);
-
-        textWriter.Flush();
-        textWriter.Close();
+        Console.WriteLine(result);
     }
 }
-
