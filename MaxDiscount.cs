@@ -63,4 +63,54 @@ class Result
             // Check all associated discount codes for the product
             for (int i = 1; i < product.Count; i++)
             {
-                string discountCode = produ
+                string discountCode = product[i];
+
+                // If discount code exists and is valid
+                if (!string.Equals(discountCode, "EMPTY", StringComparison.OrdinalIgnoreCase) && discountMap.ContainsKey(discountCode))
+                {
+                    // Apply all discounts for the given code
+                    foreach (var discount in discountMap[discountCode])
+                    {
+                        // Calculate the discounted price
+                        int discountedPrice = ApplyDiscount(originalPrice, discount);
+                        // Add it to the list of potential discounted prices
+                        discountedPrices.Add(discountedPrice);
+                    }
+                }
+            }
+
+            // Step 4: Find the minimum price from the list (O(n) or O(log n) using a heap)
+            minPrice = discountedPrices.Min();
+
+            // Add the minimum price of this product to the total
+            totalMinPrice += minPrice;
+        }
+
+        return totalMinPrice; // Return the total minimum price across all products
+    }
+}
+
+class Solution
+{
+    public static void Main(string[] args)
+    {
+        int productsRows = Convert.ToInt32(Console.ReadLine().Trim());
+        List<List<string>> products = new List<List<string>>();
+
+        for (int i = 0; i < productsRows; i++)
+        {
+            products.Add(Console.ReadLine().TrimEnd().Split(' ').ToList());
+        }
+
+        int discountsRows = Convert.ToInt32(Console.ReadLine().Trim());
+        List<List<string>> discounts = new List<List<string>>();
+
+        for (int i = 0; i < discountsRows; i++)
+        {
+            discounts.Add(Console.ReadLine().TrimEnd().Split(' ').ToList());
+        }
+
+        int result = Result.findLowestPrice(products, discounts);
+        Console.WriteLine(result);
+    }
+}
